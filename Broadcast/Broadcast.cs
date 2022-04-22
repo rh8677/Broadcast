@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace Broadcast
@@ -50,42 +49,103 @@ namespace Broadcast
                     return;
                 }
                 
+                // For each node in the network, we will print out information for it
                 for (var count = 0; count < numNodes; count++)
                 {
                     Console.Write(count + ": ");
-                    var infoNodes = new List<int>();
-                    infoNodes.Add(originNode);
+                    var infoNodes = new List<int>(); // A list of nodes that will be added to for each dimension
+                    infoNodes.Add(originNode); // We start off with the starting node
 
-                    for (var bite = 0; bite < Math.Log2(numNodes); bite++)
+                    // Simulates each dimension (or the bit value from least to most significant)
+                    for (var bit = 0; bit < Math.Log2(numNodes); bit++)
                     {
-                        for (var compare = 0; compare < numNodes; compare++)
-                        {
-                            var differences = 0;
-                            var atDiff = 0;
+                        var nodesToAdd = new List<int>(); // A list of nodes to add from this dimension
 
-                            for (var bit = 0; bit < Math.Log2(numNodes); bit++)
+                        // For each node in the dimension, we want to determine which nodes it will pass on info to
+                        foreach (var node in infoNodes)
+                        {
+                            
+                            // The potential node to pass on information to
+                            for (var compare = 0; compare < numNodes; compare++)
                             {
-                                if (((count >> bit) & 1) != ((compare >> bit) & 1)) {
-                                    differences++;
-                                    atDiff = bit;
+                                var difference = 0; // The difference in bits between the two
+                                var atDiff = 0; // The bit that contains the difference
+
+                                // For each bit in the two values, we determine the total amount of differences
+                                for (var bite = 0; bite < Math.Log2(numNodes); bite++)
+                                {
+                                    if (((node >> bite) & 1) != ((compare >> bite) & 1))
+                                    {
+                                        difference++;
+                                        atDiff = bite;
+                                    }
+                                }
+
+                                // If the difference is one bit and that difference is at the dimension we
+                                // are working with, we know that we can pass on info to this node
+                                if (difference == 1 && atDiff == bit)
+                                {
+                                    if (!infoNodes.Contains(compare) && !nodesToAdd.Contains(compare))
+                                    {
+                                        nodesToAdd.Add(compare);
+                                    }
                                 }
                             }
+                        }
 
-                            if (differences == 1 && bite == atDiff)
+                        // We add each node that we passed on info for to infoNodes
+                        foreach (var adding in nodesToAdd)
+                        {
+                            infoNodes.Add(adding);
+                        }
+
+                        // For the current node in the current dimension, we want to know whether we are
+                        // receiving or passing on information, and to which node
+                        foreach (var node in infoNodes)
+                        {
+                            if (node == count)
                             {
-                                if (infoNodes.Contains(compare))
+                                
+                                // The potential node that we might have connected with in this dimension
+                                for (var compare = 0; compare < numNodes; compare++)
                                 {
-                                    Console.Write("Recv " + compare + " ");
-                                }
-                                else
-                                {
-                                    Console.Write("Send " + compare + " ");
-                                    infoNodes.Add(compare);
+                                    var difference = 0; // The difference in bits between the two
+                                    var atDiff = 0; // The bit that contains the difference
+
+                                    // For each bit in the two values, we determine the total amount of differences
+                                    for (var bite = 0; bite < Math.Log2(numNodes); bite++)
+                                    {
+                                        if (((node >> bite) & 1) != ((compare >> bite) & 1))
+                                        {
+                                            difference++;
+                                            atDiff = bite;
+                                        }
+                                    }
+
+                                    // If the difference is one bit and that difference is at the dimension we
+                                    // are working with, we know that we had connected with this node in this
+                                    // dimension
+                                    if (difference == 1 && atDiff == bit)
+                                    {
+                                        
+                                        // If this node was just added, we know it must have received info
+                                        // from the other node
+                                        if (nodesToAdd.Contains(node))
+                                        {
+                                            Console.Write("Recv " + compare + " ");
+                                        }
+                                        
+                                        // Otherwise, we know it must have sent info out to the other node
+                                        else
+                                        {
+                                            Console.Write("Send " + compare + " ");
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    
+
                     Console.WriteLine();
                 }
             }
